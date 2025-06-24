@@ -34,13 +34,39 @@ export VOICEVOX_DIR="/path/to/your/voicevox/engine"
 
 ## ビルドと実行
 
-### 基本的な使い方
+### まずは音声生成を試してみよう！
 
 ```bash
 # ヘルプ表示
 make help
 
-# シンプル版をビルド・実行（推奨）
+# 基本的な音声生成+再生
+make voice TEXT="こんにちは"
+
+# 音声ファイル生成のみ（再生なし）
+make voice TEXT="こんにちは" OPTIONS="--quiet"
+
+# 話者とパラメータを変更
+make voice TEXT="元気です" OPTIONS="--speaker 1 --speed 1.5"
+```
+
+### 話者を調べる
+
+```bash
+# 全話者名一覧
+make voice-names
+
+# 特定話者の詳細（ずんだもんの例）
+make voice-search NAME="ずんだもん"
+
+# 使用可能なID一覧
+make voice-all-ids
+```
+
+### 学習用サンプルコード
+
+```bash
+# シンプル版を実行
 make run
 
 # AudioQuery経由版を実行
@@ -50,24 +76,20 @@ make run-audioquery
 make run-struct
 ```
 
-### 利用可能なコマンド
+### その他の利用可能なコマンド
 
 ```bash
-# ビルド
-make              # シンプル版をビルド・実行
-make simple       # シンプル版をビルド
-make audioquery   # AudioQuery版をビルド
-make struct       # 構造体分析版をビルド
-make all          # 複数をビルド
-
-# 実行
-make run          # シンプル版を実行
-make run-simple   # シンプル版を実行
-make run-audioquery # AudioQuery版を実行
-make run-struct   # 構造体分析版を実行
-
-# その他
+# ビルド関連
+make all          # 全サンプルをビルド
+make tool         # 汎用ツールのみビルド
 make clean        # 生成ファイルを削除
+
+# 詳細ヘルプ
+make voice-help   # 汎用ツール詳細ヘルプ
+
+# 話者検索
+make voice-speakers  # 詳細な話者一覧
+make voice-ids       # 話者とID対応表示
 ```
 
 ## 環境変数
@@ -75,6 +97,15 @@ make clean        # 生成ファイルを削除
 | 変数名 | 説明 | デフォルト値 |
 |--------|------|-------------|
 | `VOICEVOX_DIR` | VOICEVOXエンジンのパス | `$HOME/.voicevox/squashfs-root/vv-engine` |
+| `PLAYER` | 音声プレイヤー（汎用ツール用） | 未設定（自動再生は有効だがプレイヤー未指定） |
+
+**音声プレイヤーの設定例:**
+```bash
+export PLAYER=ffplay    # FFmpeg用（推奨）
+export PLAYER=aplay     # ALSA用
+export PLAYER=paplay    # PulseAudio用
+export PLAYER=mpv       # mpv用
+```
 
 ## ファイル構成
 
@@ -85,7 +116,9 @@ voicevox-c-samples/
 ├── voicevox_core.h       # VOICEVOX C API ヘッダー
 ├── 01_simple_tts.c       # シンプル音声合成例
 ├── 02_audioquery_tts.c   # AudioQuery経由音声合成例
-└── 03_struct_analysis.c  # 構造体分析例
+├── 03_struct_analysis.c  # 構造体分析例
+├── voicevox_tool.c       # 汎用音声生成ツール（推奨）
+└── metas.json            # 話者情報データ
 ```
 
 ## 利用可能なVOICEVOX C API関数
@@ -134,9 +167,159 @@ voicevox-c-samples/
 
 ### 学習推奨順序
 
-1. **基本関数** → `01_simple_tts.c`
-2. **AudioQuery方式** → `02_audioquery_tts.c`  
-3. **低レベル処理** → `03_struct_analysis.c`
+1. **まずは音声生成を楽しむ** → `make voice` コマンドで音声生成を試す
+2. **基本的な実装を学ぶ** → `01_simple_tts.c` で基本関数を理解
+3. **詳細制御を学ぶ** → `02_audioquery_tts.c` でAudioQuery方式を理解
+4. **汎用ツールの実装** → `voicevox_tool.c` で全機能統合の実装を学ぶ
+5. **低レベル処理** → `03_struct_analysis.c` で構造体詳細を理解
+
+### 音声パラメータ調整
+
+汎用ツール（`voicevox_tool.c`）では以下のパラメータ調整が可能：
+
+- **話速（speed_scale）**: 0.5～2.0 （1.0が標準）
+- **音高（pitch_scale）**: -0.15～0.15 （0.0が標準）
+- **音量（volume_scale）**: 0.0～2.0 （1.0が標準）
+- **開始無音時間（pre_phoneme_length）**: 秒単位
+- **終了無音時間（post_phoneme_length）**: 秒単位
+
+**重要な注意点**: AudioQueryのJSONパラメータは**スネークケース**を使用してください。
+- ✅ 正しい: `"speed_scale"`, `"pitch_scale"`, `"volume_scale"`
+- ❌ 無効: `"speedScale"`, `"pitchScale"`, `"volumeScale"` (キャメルケースは反映されません)
+
+### AudioQuery JSON パラメータ一覧
+
+AudioQueryのJSONには以下のパラメータが含まれています：
+
+#### 音声調整パラメータ
+| パラメータ | 型 | 説明 | デフォルト値 | 推奨範囲 |
+|-----------|----|----|-------------|----------|
+| `speed_scale` | float | 話速の倍率 | 1.0 | 0.5～2.0 |
+| `pitch_scale` | float | 音高の調整値 | 0.0 | -0.15～0.15 |
+| `intonation_scale` | float | イントネーションの強さ | 1.0 | 0.0～2.0 |
+| `volume_scale` | float | 音量の倍率 | 1.0 | 0.0～2.0 |
+
+#### 音声出力設定
+| パラメータ | 型 | 説明 | デフォルト値 |
+|-----------|----|----|-------------|
+| `pre_phoneme_length` | float | 音声開始前の無音時間（秒） | 0.1 |
+| `post_phoneme_length` | float | 音声終了後の無音時間（秒） | 0.1 |
+| `output_sampling_rate` | int | 出力サンプリングレート（Hz） | 24000 |
+| `output_stereo` | bool | ステレオ出力の有無 | false |
+
+#### 音韻・アクセント情報（読み取り専用）
+| パラメータ | 型 | 説明 |
+|-----------|----|----|
+| `accent_phrases` | array | アクセント句の配列（音韻、継続時間、ピッチ情報） |
+| `kana` | string | 読み仮名（カタカナ） |
+
+**注意**: `accent_phrases`と`kana`は音声合成エンジンが生成する読み取り専用データです。通常は変更しません。
+
+### 無音時間調整
+
+汎用ツールでは音声ファイル連結時に重要な無音時間を調整できます：
+
+- **pre_phoneme_length**: 音声開始前の無音時間（秒）
+- **post_phoneme_length**: 音声終了後の無音時間（秒）
+
+**用途例**:
+- `0.0, 0.0`: 無音なし（継ぎ目なし連結）
+- `0.1, 0.1`: 標準設定（自然な間）
+- `0.5, 0.5`: 長い間（章や段落の区切り）
+
+**ffmpeg連結例**:
+```bash
+ffmpeg -i section1.wav -i section2.wav -i section3.wav \
+       -filter_complex '[0:0][1:0][2:0]concat=n=3:v=0:a=1[out]' \
+       -map '[out]' combined_audio.wav
+```
+
+### 音声自動再生
+
+汎用ツールでは環境変数`PLAYER`が設定されている場合に音声を自動再生します：
+
+**環境変数の設定例**:
+```bash
+export PLAYER=aplay      # ALSA用
+export PLAYER=paplay     # PulseAudio用
+export PLAYER=ffplay     # FFmpeg用（推奨）
+export PLAYER=mpv        # mpv用
+```
+
+**使用例**:
+```bash
+# 音声プレイヤーを設定
+export PLAYER=ffplay
+
+# 音声生成+再生（デフォルト）
+make voice TEXT="こんにちは"
+
+# 音声ファイル生成のみ
+make voice TEXT="こんにちは" OPTIONS="--quiet"
+```
+
+**機能**:
+- 音声ファイル生成後に自動再生（デフォルト）
+- 再生完了を待ってから次の音声を処理
+- `--quiet`オプションで再生なしモード
+- 開発・テスト時の音声確認が効率的
+
+### 汎用音声生成ツール
+
+`voicevox_tool.c` は全ての機能を統合した実用的なコマンドラインツールです：
+
+**基本使用法**:
+```bash
+# ツールをビルド
+make voicevox_tool
+
+# 基本的な音声生成
+./voicevox_tool "こんにちは"
+
+# 話者とパラメータ指定
+./voicevox_tool "こんにちは" --speaker 1 --speed 1.5 --pitch 0.1
+
+# 生成後に自動再生
+./voicevox_tool "こんにちは" --play
+
+# 一時ファイル（再生後削除）
+./voicevox_tool "こんにちは" --temp --play
+```
+
+**Makefileからの使用**:
+```bash
+# 基本生成+再生（デフォルト）
+make voice TEXT="こんにちは"
+
+# 音声ファイル生成のみ
+make voice TEXT="こんにちは" OPTIONS="--quiet"
+
+# パラメータ付き生成+再生
+make voice TEXT="こんにちは" OPTIONS="--speaker 1 --speed 1.5"
+
+# ヘルプ表示
+make voice-help
+
+# 話者関連コマンド
+make voice-speakers     # 詳細な話者一覧
+make voice-names        # 話者名のみ一覧
+make voice-ids          # 話者とID対応表示
+make voice-all-ids      # 使用可能ID一覧
+make voice-search NAME="ずんだもん"  # 特定話者検索
+```
+
+**利用可能なオプション**:
+- `--speaker ID`: 話者指定（全話者対応）
+- `--speed VALUE`: 話速調整（0.5-2.0）
+- `--pitch VALUE`: 音高調整（-0.15-0.15）
+- `--volume VALUE`: 音量調整（0.0-2.0）
+- `--pre-silence VALUE`: 開始無音時間
+- `--post-silence VALUE`: 終了無音時間
+- `--output FILE`: 出力ファイル名
+- `--play [PLAYER]`: 生成後に再生
+- `--temp`: 一時ファイル（再生後削除）
+
+このツールにより、音声パラメータ調整、無音時間制御、自動再生などの全ての機能をひとつのコマンドで利用できます。
 
 ## トラブルシューティング
 

@@ -75,7 +75,7 @@ int main() {
            manual_opts_32x2.field1, manual_opts_32x2.field2);
     
     printf("\n=== 分析完了 ===\n");
-    printf("直接呼び出し版（make run-direct）を試してください。\n");
+    printf("直接呼び出し版を試してください。\n");
     
     return 0;
 }
