@@ -1,0 +1,25 @@
+# 実行ファイル
+01_simple_tts
+02_audioquery_tts
+03_struct_analysis
+
+# 生成ファイル
+*.wav
+*.o
+*.so
+*.a
+
+# システムファイル
+.DS_Store
+Thumbs.db
+
+# エディタ
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# デバッグ
+core
+*.core
