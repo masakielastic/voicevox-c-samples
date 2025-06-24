@@ -19,6 +19,9 @@ SOURCE_AUDIOQUERY = 02_audioquery_tts.c
 TARGET_STRUCT = 03_struct_analysis
 SOURCE_STRUCT = 03_struct_analysis.c
 
+TARGET_TOOL = voicevox_tool
+SOURCE_TOOL = voicevox_tool.c
+
 
 # ビルドルール
 $(TARGET_SIMPLE): $(SOURCE_SIMPLE)
@@ -30,57 +33,106 @@ $(TARGET_AUDIOQUERY): $(SOURCE_AUDIOQUERY)
 $(TARGET_STRUCT): $(SOURCE_STRUCT)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $< $(LDFLAGS)
 
+$(TARGET_TOOL): $(SOURCE_TOOL)
+	$(CC) $(CFLAGS) -o $@ $< -ldl
+
 
 # 全てビルド
-all: $(TARGET_SIMPLE) $(TARGET_AUDIOQUERY)
+all: $(TARGET_SIMPLE) $(TARGET_AUDIOQUERY) $(TARGET_STRUCT) $(TARGET_TOOL)
 
 # 実行時にライブラリパスを設定
 run: $(TARGET_SIMPLE)
 	@echo "=== シンプル版実行（辞書パス指定） ==="
 	LD_LIBRARY_PATH=$(VOICEVOX_DIR) ./$(TARGET_SIMPLE)
+	@if [ -n "$(PLAYER)" ]; then \
+		echo "音声再生中: direct_output.wav"; \
+		$(PLAYER) direct_output.wav; \
+	fi
 
 run-simple: $(TARGET_SIMPLE)
 	@echo "=== シンプル版実行 ==="
 	LD_LIBRARY_PATH=$(VOICEVOX_DIR) ./$(TARGET_SIMPLE)
+	@if [ -n "$(PLAYER)" ]; then \
+		echo "音声再生中: direct_output.wav"; \
+		$(PLAYER) direct_output.wav; \
+	fi
 
 run-audioquery: $(TARGET_AUDIOQUERY)
 	@echo "=== AudioQuery版実行 ==="
 	LD_LIBRARY_PATH=$(VOICEVOX_DIR) ./$(TARGET_AUDIOQUERY)
+	@if [ -n "$(PLAYER)" ]; then \
+		echo "音声再生中: audioquery_output.wav"; \
+		$(PLAYER) audioquery_output.wav; \
+	fi
 
 run-struct: $(TARGET_STRUCT)
 	@echo "=== 構造体分析版実行 ==="
 	LD_LIBRARY_PATH=$(VOICEVOX_DIR) ./$(TARGET_STRUCT)
 
+# 汎用ツールコマンド
+voice: $(TARGET_TOOL)
+	@if [ -z "$(TEXT)" ]; then echo "使用法: make voice TEXT=\"テキスト\" [OPTIONS]"; exit 1; fi
+	@LD_LIBRARY_PATH=$(VOICEVOX_DIR) ./$(TARGET_TOOL) "$(TEXT)" $(OPTIONS)
+
+voice-help: $(TARGET_TOOL)
+	@LD_LIBRARY_PATH=$(VOICEVOX_DIR) ./$(TARGET_TOOL) --help
+
+voice-speakers: $(TARGET_TOOL)
+	@LD_LIBRARY_PATH=$(VOICEVOX_DIR) ./$(TARGET_TOOL) --list-speakers
+
+voice-names: $(TARGET_TOOL)
+	@LD_LIBRARY_PATH=$(VOICEVOX_DIR) ./$(TARGET_TOOL) --speaker-names
+
+voice-ids: $(TARGET_TOOL)
+	@LD_LIBRARY_PATH=$(VOICEVOX_DIR) ./$(TARGET_TOOL) --speaker-ids
+
+voice-all-ids: $(TARGET_TOOL)
+	@LD_LIBRARY_PATH=$(VOICEVOX_DIR) ./$(TARGET_TOOL) --all-ids
+
+voice-search: $(TARGET_TOOL)
+	@if [ -z "$(NAME)" ]; then echo "使用法: make voice-search NAME=\"話者名\""; exit 1; fi
+	@LD_LIBRARY_PATH=$(VOICEVOX_DIR) ./$(TARGET_TOOL) --search "$(NAME)"
+
 # クリーンアップ
 clean:
-	rm -f $(TARGET_SIMPLE) $(TARGET_AUDIOQUERY) $(TARGET_STRUCT) *.wav
+	rm -f $(TARGET_SIMPLE) $(TARGET_AUDIOQUERY) $(TARGET_STRUCT) $(TARGET_TOOL) *.wav
 
 # ヘルプ
 help:
-	@echo "使用方法（辞書パス対応版）:"
-	@echo "  make              - シンプル版をビルド・実行（推奨）"
-	@echo "  make simple       - シンプル版をビルド"
-	@echo "  make audioquery   - AudioQuery版をビルド"
-	@echo "  make struct       - 構造体分析版をビルド"
-	@echo "  make all          - simple, audioqueryをビルド"
-	@echo "  make run          - シンプル版を実行（推奨）"
-	@echo "  make run-simple   - シンプル版を実行"
-	@echo "  make run-audioquery - AudioQuery版を実行"
-	@echo "  make run-struct   - 構造体分析版を実行"
-	@echo "  make clean        - 生成ファイルを削除"
+	@echo "=== VOICEVOX C API サンプル ==="
 	@echo ""
-	@echo "環境変数:"
-	@echo "  VOICEVOX_DIR  - VOICEVOXエンジンのパス (デフォルト: $(VOICEVOX_DIR))"
-	@echo "  例: export VOICEVOX_DIR=/path/to/your/voicevox/engine"
+	@echo "🎵 まずは音声生成を試してみましょう！"
+	@echo "  make voice TEXT=\"こんにちは\"                          # 基本音声生成+再生"
+	@echo "  make voice TEXT=\"こんにちは\" OPTIONS=\"--quiet\"       # ファイル生成のみ"
+	@echo "  make voice TEXT=\"元気です\" OPTIONS=\"--speaker 1 --speed 1.5\"  # 話者・速度変更"
 	@echo ""
-	@echo "推奨実行順序:"
-	@echo "  1. make run         # シンプル版（辞書パス指定）"
-	@echo "  2. make run-audioquery # AudioQuery経由版"
-	@echo "  3. make run-struct  # 構造体分析版"
+	@echo "🔍 話者を調べる:"
+	@echo "  make voice-names                                    # 全話者名一覧"
+	@echo "  make voice-search NAME=\"ずんだもん\"                  # ずんだもんの詳細"
+	@echo "  make voice-speakers                                 # 詳細な話者一覧"
+	@echo "  make voice-all-ids                                  # 使用可能ID一覧"
+	@echo ""
+	@echo "📚 学習用サンプルコード:"
+	@echo "  make run                                            # シンプル版実行"
+	@echo "  make run-audioquery                                 # AudioQuery版実行"
+	@echo "  make run-struct                                     # 構造体分析版実行"
+	@echo ""
+	@echo "🔧 開発者向け:"
+	@echo "  make all                                            # 全サンプルをビルド"
+	@echo "  make tool                                           # 汎用ツールのみビルド"
+	@echo "  make clean                                          # 生成ファイルを削除"
+	@echo "  make voice-help                                     # 汎用ツール詳細ヘルプ"
+	@echo ""
+	@echo "⚙️  環境変数:"
+	@echo "  export VOICEVOX_DIR=/path/to/voicevox/engine        # VOICEVOXエンジンパス"
+	@echo "  export PLAYER=ffplay                               # 音声プレイヤー設定"
+	@echo ""
+	@echo "📖 詳細な使い方やソースコード解説: README.md をご覧ください"
 
 # エイリアス
 simple: $(TARGET_SIMPLE)
 audioquery: $(TARGET_AUDIOQUERY)
 struct: $(TARGET_STRUCT)
+tool: $(TARGET_TOOL)
 
-.PHONY: all run run-simple run-audioquery run-struct clean help simple audioquery struct
+.PHONY: all run run-simple run-audioquery run-struct clean help simple audioquery struct tool voice voice-help voice-speakers voice-names voice-ids voice-all-ids voice-search
