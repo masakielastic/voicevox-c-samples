@@ -647,7 +647,6 @@ int main(int argc, char* argv[]) {
             case 'l': 
                 config.play_audio = true;
                 if (optarg) config.player = optarg;
-                else config.player = getenv("PLAYER");
                 break;
             case 't': config.temp_file = true; break;
             case 'L': config.list_speakers = true; break;
@@ -698,10 +697,6 @@ int main(int argc, char* argv[]) {
 
     config.text = argv[optind];
     
-    // --playが指定されたがプレイヤーが未設定の場合、環境変数を使用
-    if (config.play_audio && !config.player) {
-        config.player = getenv("PLAYER");
-    }
     
     // ライブラリを動的ロード
     const char* voicevox_dir = getenv("VOICEVOX_DIR");

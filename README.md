@@ -113,7 +113,7 @@ make voice-ids       # 話者とID対応表示
 | 変数名 | 説明 | デフォルト値 |
 |--------|------|-------------|
 | `VOICEVOX_DIR` | VOICEVOXエンジンのパス | `$HOME/.voicevox/squashfs-root/vv-engine` |
-| `PLAYER` | 音声プレイヤー（汎用ツール用） | 未設定（自動再生は有効だがプレイヤー未指定） |
+| `PLAYER` | 音声プレイヤー（Makefile用） | 未設定 |
 
 **音声プレイヤーの設定例:**
 ```bash
@@ -252,33 +252,29 @@ ffmpeg -i section1.wav -i section2.wav -i section3.wav \
 
 ### 音声自動再生
 
-汎用ツールでは環境変数`PLAYER`が設定されている場合に音声を自動再生します：
-
-**環境変数の設定例**:
-```bash
-export PLAYER=aplay      # ALSA用
-export PLAYER=paplay     # PulseAudio用
-export PLAYER=ffplay     # FFmpeg用（推奨）
-export PLAYER=mpv        # mpv用
-```
-
-**使用例**:
+**Makefileでの再生**（PLAYER環境変数使用）:
 ```bash
 # 音声プレイヤーを設定
-export PLAYER=ffplay
+export PLAYER=ffplay     # FFmpeg用（推奨）
+export PLAYER=aplay      # ALSA用  
+export PLAYER=paplay     # PulseAudio用
+export PLAYER=mpv        # mpv用
 
-# 音声生成+再生（デフォルト）
+# 音声生成+再生
 make voice TEXT="こんにちは"
 
 # 音声ファイル生成のみ
 make gen TEXT="こんにちは"
 ```
 
-**機能**:
-- 音声ファイル生成後に自動再生（デフォルト）
-- 再生完了を待ってから次の音声を処理
-- `--quiet`オプションで再生なしモード
-- 開発・テスト時の音声確認が効率的
+**voicevox_toolでの再生**（プレイヤー直接指定）:
+```bash
+# 音声生成+再生（プレイヤー指定必須）
+./voicevox_tool "こんにちは" --play ffplay
+
+# 音声ファイル生成のみ
+./voicevox_tool "こんにちは"
+```
 
 ### 汎用音声生成ツール
 
@@ -295,19 +291,25 @@ make voicevox_tool
 # 話者とパラメータ指定
 ./voicevox_tool "こんにちは" --speaker 1 --speed 1.5 --pitch 0.1
 
-# 生成後に自動再生
-./voicevox_tool "こんにちは" --play
+# 音声ファイル生成のみ（再生なし）
+./voicevox_tool "こんにちは"
+
+# 生成後に自動再生（プレイヤー指定必須）
+./voicevox_tool "こんにちは" --play ffplay
 
 # 一時ファイル（再生後削除）
-./voicevox_tool "こんにちは" --temp --play
+./voicevox_tool "こんにちは" --temp --play ffplay
 ```
 
-**Makefileからの使用**:
+**Makefileからの使用**（PLAYER環境変数で自動再生）:
 ```bash
-# 基本生成+再生（デフォルト）
+# 音声プレイヤー設定（必須）
+export PLAYER=ffplay
+
+# 基本生成+再生
 make voice TEXT="こんにちは"
 
-# 音声ファイル生成のみ
+# 音声ファイル生成のみ（再生なし）
 make gen TEXT="こんにちは"
 
 # パラメータ付き生成+再生
@@ -332,7 +334,7 @@ make voice-search NAME="ずんだもん"  # 特定話者検索
 - `--pre-silence VALUE`: 開始無音時間
 - `--post-silence VALUE`: 終了無音時間
 - `--output FILE`: 出力ファイル名
-- `--play [PLAYER]`: 生成後に再生
+- `--play PLAYER`: 生成後に再生（プレイヤー指定必須）
 - `--temp`: 一時ファイル（再生後削除）
 
 このツールにより、音声パラメータ調整、無音時間制御、自動再生などの全ての機能をひとつのコマンドで利用できます。
