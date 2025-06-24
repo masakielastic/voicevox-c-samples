@@ -72,6 +72,10 @@ run-struct: $(TARGET_STRUCT)
 # 汎用ツールコマンド
 voice: $(TARGET_TOOL)
 	@if [ -z "$(TEXT)" ]; then echo "使用法: make voice TEXT=\"テキスト\" [OPTIONS]"; exit 1; fi
+	@LD_LIBRARY_PATH=$(VOICEVOX_DIR) ./$(TARGET_TOOL) "$(TEXT)" --play $(OPTIONS)
+
+gen: $(TARGET_TOOL)
+	@if [ -z "$(TEXT)" ]; then echo "使用法: make gen TEXT=\"テキスト\" [OPTIONS]"; exit 1; fi
 	@LD_LIBRARY_PATH=$(VOICEVOX_DIR) ./$(TARGET_TOOL) "$(TEXT)" $(OPTIONS)
 
 voice-help: $(TARGET_TOOL)
@@ -103,8 +107,13 @@ help:
 	@echo ""
 	@echo "🎵 まずは音声生成を試してみましょう！"
 	@echo "  make voice TEXT=\"こんにちは\"                          # 基本音声生成+再生"
-	@echo "  make voice TEXT=\"こんにちは\" OPTIONS=\"--quiet\"       # ファイル生成のみ"
-	@echo "  make voice TEXT=\"元気です\" OPTIONS=\"--speaker 1 --speed 1.5\"  # 話者・速度変更"
+	@echo "  make voice TEXT=\"今日の夕食は？\" OPTIONS=\"--speaker 2\"  # 話者変更（四国めたん）"
+	@echo "  make voice TEXT=\"カレーなのだ\" OPTIONS=\"--speaker 3\"    # 話者変更（ずんだもん）"
+	@echo "  make gen TEXT=\"会議資料を作成中\"                      # ファイル生成のみ"
+	@echo "  make voice TEXT=\"早口で話します\" OPTIONS=\"--speed 1.5\"   # 話速変更"
+	@echo "  make voice TEXT=\"高い声で話します\" OPTIONS=\"--pitch 0.1\" # 音高変更"
+	@echo "  make voice TEXT=\"高く早く\" OPTIONS=\"--pitch 0.1 --speed 1.5\"    # 音高+話速"
+	@echo "  make voice-help                                     # 全オプション確認"
 	@echo ""
 	@echo "🔍 話者を調べる:"
 	@echo "  make voice-names                                    # 全話者名一覧"
@@ -122,6 +131,7 @@ help:
 	@echo "  make tool                                           # 汎用ツールのみビルド"
 	@echo "  make clean                                          # 生成ファイルを削除"
 	@echo "  make voice-help                                     # 汎用ツール詳細ヘルプ"
+	@echo "  make gen TEXT=\"テキスト\"                             # 音声ファイル生成のみ"
 	@echo ""
 	@echo "⚙️  環境変数:"
 	@echo "  export VOICEVOX_DIR=/path/to/voicevox/engine        # VOICEVOXエンジンパス"
@@ -135,4 +145,4 @@ audioquery: $(TARGET_AUDIOQUERY)
 struct: $(TARGET_STRUCT)
 tool: $(TARGET_TOOL)
 
-.PHONY: all run run-simple run-audioquery run-struct clean help simple audioquery struct tool voice voice-help voice-speakers voice-names voice-ids voice-all-ids voice-search
+.PHONY: all run run-simple run-audioquery run-struct clean help simple audioquery struct tool voice gen voice-help voice-speakers voice-names voice-ids voice-all-ids voice-search

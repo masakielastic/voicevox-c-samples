@@ -40,7 +40,6 @@ typedef struct {
     bool temp_file;
     bool list_speakers;
     bool show_help;
-    bool quiet_mode;
     bool show_speaker_names;
     bool show_speaker_ids;
     bool show_all_ids;
@@ -500,8 +499,7 @@ void print_usage(const char* program_name) {
     printf("  --pre-silence VALUE  開始無音 (秒, デフォルト: 0.1)\n");
     printf("  --post-silence VALUE 終了無音 (秒, デフォルト: 0.1)\n");
     printf("  --output FILE        出力ファイル名 (デフォルト: output.wav)\n");
-    printf("  --play [PLAYER]      生成後に再生 (デフォルトで有効)\n");
-    printf("  --quiet             音声ファイル生成のみ（再生なし）\n");
+    printf("  --play [PLAYER]      生成後に再生\n");
     printf("  --temp              一時ファイル（再生後削除）\n");
     printf("  --list-speakers     話者一覧表示\n");
     printf("  --speaker-names     話者名のみ表示\n");
@@ -510,8 +508,8 @@ void print_usage(const char* program_name) {
     printf("  --search NAME       特定話者を検索\n");
     printf("  --help              このヘルプを表示\n\n");
     printf("使用例:\n");
-    printf("  %s \"こんにちは\"                           # 基本生成+再生\n", program_name);
-    printf("  %s \"こんにちは\" --quiet                   # 音声ファイル生成のみ\n", program_name);
+    printf("  %s \"こんにちは\"                           # 基本生成（再生なし）\n", program_name);
+    printf("  %s \"こんにちは\" --play                    # 生成+再生\n", program_name);
     printf("  %s \"こんにちは\" --speaker 1 --speed 1.5   # 話者・速度指定+再生\n", program_name);
     printf("  %s \"こんにちは\" --temp                    # 一時再生\n", program_name);
     printf("  %s \"元気です\" --speaker 1 --pitch 0.1 --volume 1.2  # 複数パラメータ\n", program_name);
@@ -606,11 +604,10 @@ int main(int argc, char* argv[]) {
         .volume_scale = 1.0f,
         .pre_silence = 0.1f,
         .post_silence = 0.1f,
-        .play_audio = true,
+        .play_audio = false,
         .temp_file = false,
         .list_speakers = false,
         .show_help = false,
-        .quiet_mode = false,
         .show_speaker_names = false,
         .show_speaker_ids = false,
         .show_all_ids = false
@@ -625,7 +622,6 @@ int main(int argc, char* argv[]) {
         {"post-silence", required_argument, 0, 'O'},
         {"output", required_argument, 0, 'o'},
         {"play", optional_argument, 0, 'l'},
-        {"quiet", no_argument, 0, 'q'},
         {"temp", no_argument, 0, 't'},
         {"list-speakers", no_argument, 0, 'L'},
         {"speaker-names", no_argument, 0, 'N'},
@@ -639,7 +635,7 @@ int main(int argc, char* argv[]) {
     int option_index = 0;
     int c;
 
-    while ((c = getopt_long(argc, argv, "s:S:p:v:P:O:o:l::qtLNIAR:h", long_options, &option_index)) != -1) {
+    while ((c = getopt_long(argc, argv, "s:S:p:v:P:O:o:l::tLNIAR:h", long_options, &option_index)) != -1) {
         switch (c) {
             case 's': config.speaker_id = atoi(optarg); break;
             case 'S': config.speed_scale = atof(optarg); break;
@@ -652,10 +648,6 @@ int main(int argc, char* argv[]) {
                 config.play_audio = true;
                 if (optarg) config.player = optarg;
                 else config.player = getenv("PLAYER");
-                break;
-            case 'q': 
-                config.quiet_mode = true;
-                config.play_audio = false;
                 break;
             case 't': config.temp_file = true; break;
             case 'L': config.list_speakers = true; break;
@@ -706,7 +698,7 @@ int main(int argc, char* argv[]) {
 
     config.text = argv[optind];
     
-    // デフォルトで再生を有効にし、PLAYER環境変数を使用
+    // --playが指定されたがプレイヤーが未設定の場合、環境変数を使用
     if (config.play_audio && !config.player) {
         config.player = getenv("PLAYER");
     }

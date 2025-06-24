@@ -43,11 +43,26 @@ make help
 # 基本的な音声生成+再生
 make voice TEXT="こんにちは"
 
-# 音声ファイル生成のみ（再生なし）
-make voice TEXT="こんにちは" OPTIONS="--quiet"
+# 話者を変更（四国めたん）
+make voice TEXT="今日の夕食は？" OPTIONS="--speaker 2"
 
-# 話者とパラメータを変更
-make voice TEXT="元気です" OPTIONS="--speaker 1 --speed 1.5"
+# 話者を変更（ずんだもん）
+make voice TEXT="カレーなのだ" OPTIONS="--speaker 3"
+
+# 音声ファイル生成のみ
+make gen TEXT="会議資料を作成中"
+
+# 話速を変更  
+make voice TEXT="早口で話します" OPTIONS="--speed 1.5"
+
+# 音高を変更
+make voice TEXT="高い声で話します" OPTIONS="--pitch 0.1"
+
+# 複数パラメータを組み合わせ
+make voice TEXT="高く早く" OPTIONS="--pitch 0.1 --speed 1.5"
+
+# 全オプションを確認
+make voice-help
 ```
 
 ### 話者を調べる
@@ -85,7 +100,8 @@ make tool         # 汎用ツールのみビルド
 make clean        # 生成ファイルを削除
 
 # 詳細ヘルプ
-make voice-help   # 汎用ツール詳細ヘルプ
+make voice-help      # 汎用ツール詳細ヘルプ
+make gen TEXT="テキスト"          # 音声ファイル生成のみ
 
 # 話者検索
 make voice-speakers  # 詳細な話者一覧
@@ -255,7 +271,7 @@ export PLAYER=ffplay
 make voice TEXT="こんにちは"
 
 # 音声ファイル生成のみ
-make voice TEXT="こんにちは" OPTIONS="--quiet"
+make gen TEXT="こんにちは"
 ```
 
 **機能**:
@@ -292,7 +308,7 @@ make voicevox_tool
 make voice TEXT="こんにちは"
 
 # 音声ファイル生成のみ
-make voice TEXT="こんにちは" OPTIONS="--quiet"
+make gen TEXT="こんにちは"
 
 # パラメータ付き生成+再生
 make voice TEXT="こんにちは" OPTIONS="--speaker 1 --speed 1.5"
